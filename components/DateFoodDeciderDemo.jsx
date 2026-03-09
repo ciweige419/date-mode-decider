@@ -1,0 +1,336 @@
+'use client';
+
+import { track } from '@/lib/track';
+import React, { useEffect, useMemo, useState } from 'react';
+
+const MODE_META = {
+  light: {
+    title: '轻接触型',
+    subtitle: '低压力、可进可退',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-200',
+  },
+  chat: {
+    title: '聊天了解型',
+    subtitle: '适合交流和观察',
+    bg: 'bg-sky-50',
+    border: 'border-sky-200',
+  },
+  warm: {
+    title: '升温互动型',
+    subtitle: '更容易推进关系温度',
+    bg: 'bg-violet-50',
+    border: 'border-violet-200',
+  },
+  easy: {
+    title: '轻松陪伴型',
+    subtitle: '自然见面，不求仪式感',
+    bg: 'bg-amber-50',
+    border: 'border-amber-200',
+  },
+};
+
+const MODE_ACTIVITIES = {
+  light: ['咖啡', '甜品', '散步'],
+  chat: ['咖啡', '简餐', '安静正餐'],
+  warm: ['火锅烤肉', '小酒馆', '散步'],
+  easy: ['散步', '电影', '简餐'],
+};
+
+const TIME_EXCLUDE = {
+  中午: ['小酒馆'],
+  下午: ['小酒馆'],
+  晚餐: ['咖啡', '甜品'],
+  夜宵: ['咖啡', '安静正餐', '简餐'],
+};
+
+const ACTIVITY_DESC = {
+  咖啡: '轻量、可快速结束，适合白天短见面。',
+  甜品: '比正餐更轻，适合不想把局做太重时。',
+  简餐: '介于随意和正式之间，适合正常聊天。',
+  安静正餐: '更完整、更体面，适合认真交流。',
+  火锅烤肉: '热闹、有互动，但气味重、节奏偏乱。',
+  散步: '低压力、可边走边聊，也方便撤退。',
+  小酒馆: '夜间氛围强，适合熟一点或想升温时。',
+  电影: '陪伴感强，但交流空间少。',
+};
+
+function uniq(arr) {
+  return [...new Set(arr)];
+}
+
+export default function DateFoodDeciderDemo() {
+  const [stage, setStage] = useState('第一次见面');
+  const [time, setTime] = useState('下午');
+  const [goal, setGoal] = useState('不尴尬');
+  const [result, setResult] = useState(null);
+
+  const summary = useMemo(() => [stage, time, goal].join(' / '), [stage, time, goal]);
+
+  useEffect(() => {
+    track('page_view');
+  }, []);
+
+  useEffect(() => {
+    if (result) {
+      track('result_view');
+    }
+  }, [result]);
+
+  function pickMode() {
+    if (time === '夜宵' && goal === '多聊天') {
+      return 'light';
+    }
+    if ((time === '中午' || time === '下午') && goal === '升温') {
+      return 'chat';
+    }
+    if (stage === '第一次见面' && goal === '升温') {
+      return 'chat';
+    }
+
+    if (stage === '第一次见面') {
+      if (goal === '多聊天') return 'chat';
+      return 'light';
+    }
+    if (stage === '前几次见面') {
+      if (goal === '多聊天') return 'chat';
+      if (goal === '升温') return 'warm';
+      if (goal === '放松陪伴') return 'easy';
+      return 'light';
+    }
+    if (stage === '已经比较熟') {
+      if (goal === '多聊天') return 'chat';
+      if (goal === '升温') return 'warm';
+      return 'easy';
+    }
+    return 'chat';
+  }
+
+  function getSafetyFiltered(modeActivities) {
+    let blocked = [];
+    let warning = '';
+
+    if (stage === '第一次见面') {
+      blocked = ['小酒馆', '电影'];
+      warning = '第一次见面别把局做太重，优先低压力、方便撤退的形式。';
+      if (goal !== '升温') blocked.push('火锅烤肉');
+    }
+
+    const left = modeActivities.filter((x) => !blocked.includes(x));
+    return { left, blocked, warning };
+  }
+
+  function buildResult() {
+    let downgraded = false;
+    let mode = pickMode();
+    const notes = [];
+
+    let modePool = MODE_ACTIVITIES[mode];
+    const safety = getSafetyFiltered(modePool);
+    let poolAfterSafety = safety.left;
+
+    const timeExclude = TIME_EXCLUDE[time] || [];
+
+    if ((time === '中午' || time === '下午') && mode === 'warm' && stage !== '第一次见面') {
+      poolAfterSafety = uniq(poolAfterSafety.filter((x) => x !== '火锅烤肉').concat('简餐'));
+    }
+
+    let matched = poolAfterSafety.filter((x) => !timeExclude.includes(x));
+
+    if (time === '晚餐' && mode === 'light' && matched.length < 2) {
+      matched = uniq(['简餐', '散步']);
+      downgraded = true;
+    }
+
+    if (time === '夜宵' && mode === 'chat') {
+      matched = ['散步'];
+      mode = 'light';
+      downgraded = true;
+    }
+
+    if ((time === '中午' || time === '下午') && mode === 'warm' && matched.length < 2) {
+      matched = uniq(['散步', '简餐']);
+      downgraded = true;
+    }
+
+    if (matched.length < 2) {
+      if (time === '夜宵') {
+        matched = uniq(matched.concat(['散步']).filter((x) => !timeExclude.includes(x)));
+      }
+      if (time === '晚餐') {
+        matched = uniq(matched.concat(['简餐', '散步']).filter((x) => !timeExclude.includes(x)));
+      }
+      if (time === '中午' || time === '下午') {
+        matched = uniq(matched.concat(['简餐', '散步']).filter((x) => !timeExclude.includes(x)));
+      }
+      if (matched.length >= 2) downgraded = true;
+    }
+
+    const recommend = matched.slice(0, 3);
+    const planB = matched[3] || matched[1] || '';
+
+    const avoidBase = uniq([...TIME_EXCLUDE[time], ...safety.blocked]);
+    const avoid = avoidBase.filter((x) => !recommend.includes(x) && x !== planB).slice(0, 2);
+
+    let crashWarning = safety.warning || '';
+    if (!crashWarning) {
+      if (time === '夜宵' && goal === '多聊天') {
+        crashWarning = '夜宵更适合轻松见面，不太适合认真聊天。';
+      } else if ((time === '中午' || time === '下午') && goal === '升温') {
+        crashWarning = '白天更适合自然推进，不适合硬做情绪升温局。';
+      } else if (stage === '第一次见面' && goal === '升温') {
+        crashWarning = '第一次见面先建立舒适感，比急着推进更重要。';
+      } else if (time === '夜宵') {
+        crashWarning = '夜宵局天然偏随意，别期待它自动长成体面正式的约会。';
+      } else if (time === '晚餐' && goal === '不尴尬') {
+        crashWarning = '想稳一点时，别把晚餐做成高投入高压力的局。';
+      } else if (goal === '多聊天') {
+        crashWarning = '想认真了解对方，就别选交流空间太少的项目。';
+      } else if (goal === '升温') {
+        crashWarning = '想升温也别太快，先保证这次见面本身顺畅。';
+      } else {
+        crashWarning = '别让活动形式抢走重点，这次核心是让相处方式顺起来。';
+      }
+    }
+
+    let reason = '';
+    if (mode === 'light') {
+      reason = '这次更适合低压力、方便撤退、不会把局做太重的见面形式。';
+    }
+    if (mode === 'chat') {
+      reason = '这次重点是交流和观察，对活动的要求是安静、自然、可说话。';
+    }
+    if (mode === 'warm') {
+      reason = '这次更适合带一点互动感和情绪温度，但前提是别越过边界。';
+    }
+    if (mode === 'easy') {
+      reason = '这次更适合自然陪伴，不需要太强的设计感或正式感。';
+    }
+
+    if (time === '晚餐' && recommend.includes('咖啡')) {
+      recommend.splice(recommend.indexOf('咖啡'), 1);
+    }
+    if (time === '夜宵') {
+      ['咖啡', '安静正餐', '简餐'].forEach((x) => {
+        const i = recommend.indexOf(x);
+        if (i >= 0) recommend.splice(i, 1);
+      });
+    }
+
+    return {
+      mode,
+      recommend: uniq(recommend).slice(0, 3),
+      planB: planB && !recommend.includes(planB) ? planB : '',
+      avoid,
+      crashWarning,
+      reason,
+      downgraded,
+      downgradeText: downgraded
+        ? '这个时间段不太适合你当前想要的约会节奏，所以系统优先给了更稳的安排。'
+        : '',
+      notes: uniq(notes),
+    };
+  }
+
+  const handleGenerate = () => {
+    track('start_click');
+    setResult(buildResult());
+  };
+
+  const ChipGroup = ({ label, options, value, onChange }) => (
+    <div className="mb-6">
+      <div className="text-sm font-semibold text-gray-700 mb-3">{label}</div>
+      <div className="flex flex-wrap gap-2">
+        {options.map((opt) => (
+          <button
+            key={opt}
+            onClick={() => onChange(opt)}
+            className={`px-4 py-2 rounded-2xl border text-sm transition ${
+              value === opt ? 'bg-black text-white border-black' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-500'
+            }`}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <main className="min-h-screen bg-neutral-100 p-4 md:p-8">
+      <div className="max-w-md mx-auto bg-white rounded-[28px] shadow-sm border border-neutral-200 overflow-hidden">
+        <div className="p-6 border-b border-neutral-100">
+          <h1 className="text-2xl font-bold tracking-tight">约会模式决策器</h1>
+          <p className="text-sm text-neutral-500 mt-2">不是替你选店，而是帮你判断这次更适合什么约会形式。</p>
+        </div>
+
+        <div className="p-6">
+          <ChipGroup label="第几次见面" options={['第一次见面', '前几次见面', '已经比较熟']} value={stage} onChange={setStage} />
+          <ChipGroup label="见面时间" options={['中午', '下午', '晚餐', '夜宵']} value={time} onChange={setTime} />
+          <ChipGroup label="这次更想要" options={['不尴尬', '多聊天', '升温', '放松陪伴']} value={goal} onChange={setGoal} />
+
+          <button onClick={handleGenerate} className="w-full mt-2 rounded-2xl bg-black text-white py-3.5 text-base font-semibold hover:opacity-90 transition">
+            开始判断
+          </button>
+        </div>
+
+        {result && (
+          <div className="px-6 pb-6">
+            <div className={`rounded-[24px] p-5 border ${MODE_META[result.mode].bg} ${MODE_META[result.mode].border}`}>
+              <div className="text-xs text-neutral-500 mb-2">本次判断</div>
+              <div className="text-3xl font-bold mb-1">{MODE_META[result.mode].title}</div>
+              <div className="text-sm text-neutral-600 mb-3">{MODE_META[result.mode].subtitle}</div>
+              <div className="text-sm text-neutral-600 mb-4">{summary}</div>
+
+              {result.downgraded && (
+                <div className="mb-4 rounded-2xl bg-white/80 border border-neutral-200 p-4">
+                  <div className="text-sm text-neutral-700 leading-6">{result.downgradeText}</div>
+                </div>
+              )}
+
+              <div className="mb-4">
+                <div className="text-sm font-semibold mb-2">推荐活动</div>
+                <div className="flex gap-2 flex-wrap mb-2">
+                  {result.recommend.map((item) => (
+                    <span key={item} className="text-sm px-3 py-1.5 rounded-full bg-white border border-neutral-300 text-neutral-900">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+                <div className="text-xs text-neutral-600 leading-5">{result.recommend.map((item) => ACTIVITY_DESC[item]).join('；')}</div>
+              </div>
+
+              {result.planB && (
+                <div className="mb-4">
+                  <div className="text-sm font-semibold mb-2">Plan B</div>
+                  <div className="inline-flex text-sm px-3 py-1.5 rounded-full bg-white border border-neutral-300 text-neutral-900">{result.planB}</div>
+                </div>
+              )}
+
+              <div className="mb-4">
+                <div className="text-sm font-semibold mb-2">这次不建议</div>
+                <div className="flex gap-2 flex-wrap">
+                  {result.avoid.map((item) => (
+                    <span key={item} className="text-sm px-3 py-1.5 rounded-full bg-neutral-100 border border-neutral-200 text-neutral-500">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-4 rounded-2xl bg-white border border-neutral-200 p-4">
+                <div className="text-sm font-semibold mb-2">翻车预警</div>
+                <div className="text-sm text-neutral-700 leading-6">{result.crashWarning}</div>
+              </div>
+
+              <div>
+                <div className="text-sm font-semibold mb-2">判断理由</div>
+                <div className="text-sm text-neutral-700 leading-6">{result.reason}</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
