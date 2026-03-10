@@ -4,26 +4,26 @@ const MODE_META = {
   light: {
     title: '轻接触型',
     subtitle: '低压力、可进可退',
-    bg: 'bg-emerald-50',
-    border: 'border-emerald-200',
+    bg: '#ecfdf5',
+    border: '#a7f3d0',
   },
   chat: {
     title: '聊天了解型',
     subtitle: '适合交流和观察',
-    bg: 'bg-sky-50',
-    border: 'border-sky-200',
+    bg: '#f0f9ff',
+    border: '#bae6fd',
   },
   warm: {
     title: '升温互动型',
     subtitle: '更容易推进关系温度',
-    bg: 'bg-violet-50',
-    border: 'border-violet-200',
+    bg: '#f5f3ff',
+    border: '#ddd6fe',
   },
   easy: {
     title: '轻松陪伴型',
     subtitle: '自然见面，不求仪式感',
-    bg: 'bg-amber-50',
-    border: 'border-amber-200',
+    bg: '#fffbeb',
+    border: '#fde68a',
   },
 };
 
@@ -58,18 +58,22 @@ function uniq(arr) {
 
 function ChipGroup({ label, options, value, onChange }) {
   return (
-    <div className="mb-6">
-      <div className="mb-3 text-sm font-semibold text-gray-700">{label}</div>
-      <div className="flex flex-wrap gap-2">
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ marginBottom: 12, fontSize: 14, fontWeight: 600, color: '#374151' }}>{label}</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         {options.map((opt) => (
           <button
             key={opt}
             onClick={() => onChange(opt)}
-            className={`rounded-2xl border px-4 py-2 text-sm transition ${
-              value === opt
-                ? 'border-black bg-black text-white'
-                : 'border-gray-300 bg-white text-gray-700 hover:border-gray-500'
-            }`}
+            style={{
+              borderRadius: 16,
+              border: value === opt ? '1px solid #111111' : '1px solid #d1d5db',
+              padding: '10px 16px',
+              fontSize: 14,
+              background: value === opt ? '#111111' : '#ffffff',
+              color: value === opt ? '#ffffff' : '#374151',
+              cursor: 'pointer',
+            }}
           >
             {opt}
           </button>
@@ -79,7 +83,7 @@ function ChipGroup({ label, options, value, onChange }) {
   );
 }
 
-export default function App() {
+export default function DateFoodDeciderDemo() {
   const [stage, setStage] = useState('第一次见面');
   const [time, setTime] = useState('下午');
   const [goal, setGoal] = useState('不尴尬');
@@ -223,79 +227,162 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-100 p-4 md:p-8">
-      <div className="mx-auto max-w-md overflow-hidden rounded-[28px] border border-neutral-200 bg-white shadow-sm">
-        <div className="border-b border-neutral-100 p-6">
-          <div className="text-2xl font-bold tracking-tight">约会模式决策器</div>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: '#f5f5f5',
+        padding: '16px',
+        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 460,
+          margin: '0 auto',
+          overflow: 'hidden',
+          borderRadius: 28,
+          border: '1px solid #e5e5e5',
+          background: '#ffffff',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+        }}
+      >
+        <div style={{ borderBottom: '1px solid #f1f1f1', padding: 24 }}>
+          <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.03em' }}>约会模式决策器</div>
         </div>
 
-        <div className="p-6">
+        <div style={{ padding: 24 }}>
           <ChipGroup label="第几次见面" options={['第一次见面', '前几次见面', '已经比较熟']} value={stage} onChange={setStage} />
           <ChipGroup label="见面时间" options={['中午', '下午', '晚餐', '夜宵']} value={time} onChange={setTime} />
           <ChipGroup label="这次更想要" options={['不尴尬', '多聊天', '升温', '放松陪伴']} value={goal} onChange={setGoal} />
 
           <button
             onClick={() => setResult(buildResult())}
-            className="mt-2 w-full rounded-2xl bg-black py-3.5 text-base font-semibold text-white transition hover:opacity-90"
+            style={{
+              marginTop: 8,
+              width: '100%',
+              borderRadius: 16,
+              background: '#111111',
+              padding: '14px 16px',
+              fontSize: 16,
+              fontWeight: 600,
+              color: '#ffffff',
+              border: 'none',
+              cursor: 'pointer',
+            }}
           >
             开始判断
           </button>
         </div>
 
         {result && (
-          <div className="px-6 pb-6">
-            <div className={`rounded-[24px] border p-5 ${MODE_META[result.mode].bg} ${MODE_META[result.mode].border}`}>
-              <div className="mb-2 text-xs text-neutral-500">本次判断</div>
-              <div className="mb-1 text-3xl font-bold">{MODE_META[result.mode].title}</div>
-              <div className="mb-3 text-sm text-neutral-600">{MODE_META[result.mode].subtitle}</div>
-              <div className="mb-4 text-sm text-neutral-600">{summary}</div>
+          <div style={{ padding: '0 24px 24px' }}>
+            <div
+              style={{
+                borderRadius: 24,
+                border: `1px solid ${MODE_META[result.mode].border}`,
+                background: MODE_META[result.mode].bg,
+                padding: 20,
+              }}
+            >
+              <div style={{ marginBottom: 8, fontSize: 12, color: '#737373' }}>本次判断</div>
+              <div style={{ marginBottom: 4, fontSize: 32, fontWeight: 700 }}>{MODE_META[result.mode].title}</div>
+              <div style={{ marginBottom: 12, fontSize: 14, color: '#525252' }}>{MODE_META[result.mode].subtitle}</div>
+              <div style={{ marginBottom: 16, fontSize: 14, color: '#525252' }}>{summary}</div>
 
               {result.downgraded && (
-                <div className="mb-4 rounded-2xl border border-neutral-200 bg-white/80 p-4">
-                  <div className="text-sm leading-6 text-neutral-700">{result.downgradeText}</div>
+                <div
+                  style={{
+                    marginBottom: 16,
+                    borderRadius: 16,
+                    border: '1px solid #e5e5e5',
+                    background: 'rgba(255,255,255,0.8)',
+                    padding: 16,
+                  }}
+                >
+                  <div style={{ fontSize: 14, lineHeight: 1.7, color: '#404040' }}>{result.downgradeText}</div>
                 </div>
               )}
 
-              <div className="mb-4">
-                <div className="mb-2 text-sm font-semibold">推荐活动</div>
-                <div className="mb-2 flex flex-wrap gap-2">
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 600 }}>推荐活动</div>
+                <div style={{ marginBottom: 8, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {result.recommend.map((item) => (
-                    <span key={item} className="rounded-full border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-900">
+                    <span
+                      key={item}
+                      style={{
+                        borderRadius: 9999,
+                        border: '1px solid #d4d4d4',
+                        background: '#ffffff',
+                        padding: '6px 12px',
+                        fontSize: 14,
+                        color: '#171717',
+                      }}
+                    >
                       {item}
                     </span>
                   ))}
                 </div>
-                <div className="text-xs leading-5 text-neutral-600">{result.recommend.map((item) => ACTIVITY_DESC[item]).join('；')}</div>
+                <div style={{ fontSize: 12, lineHeight: 1.7, color: '#525252' }}>
+                  {result.recommend.map((item) => ACTIVITY_DESC[item]).join('；')}
+                </div>
               </div>
 
               {result.planB && (
-                <div className="mb-4">
-                  <div className="mb-2 text-sm font-semibold">Plan B</div>
-                  <div className="inline-flex rounded-full border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-900">
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 600 }}>Plan B</div>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      borderRadius: 9999,
+                      border: '1px solid #d4d4d4',
+                      background: '#ffffff',
+                      padding: '6px 12px',
+                      fontSize: 14,
+                      color: '#171717',
+                    }}
+                  >
                     {result.planB}
                   </div>
                 </div>
               )}
 
-              <div className="mb-4">
-                <div className="mb-2 text-sm font-semibold">这次不建议</div>
-                <div className="flex flex-wrap gap-2">
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 600 }}>这次不建议</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {result.avoid.map((item) => (
-                    <span key={item} className="rounded-full border border-neutral-200 bg-neutral-100 px-3 py-1.5 text-sm text-neutral-500">
+                    <span
+                      key={item}
+                      style={{
+                        borderRadius: 9999,
+                        border: '1px solid #e5e5e5',
+                        background: '#f5f5f5',
+                        padding: '6px 12px',
+                        fontSize: 14,
+                        color: '#737373',
+                      }}
+                    >
                       {item}
                     </span>
                   ))}
                 </div>
               </div>
 
-              <div className="mb-4 rounded-2xl border border-neutral-200 bg-white p-4">
-                <div className="mb-2 text-sm font-semibold">翻车预警</div>
-                <div className="text-sm leading-6 text-neutral-700">{result.crashWarning}</div>
+              <div
+                style={{
+                  marginBottom: 16,
+                  borderRadius: 16,
+                  border: '1px solid #e5e5e5',
+                  background: '#ffffff',
+                  padding: 16,
+                }}
+              >
+                <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 600 }}>翻车预警</div>
+                <div style={{ fontSize: 14, lineHeight: 1.7, color: '#404040' }}>{result.crashWarning}</div>
               </div>
 
               <div>
-                <div className="mb-2 text-sm font-semibold">判断理由</div>
-                <div className="text-sm leading-6 text-neutral-700">{result.reason}</div>
+                <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 600 }}>判断理由</div>
+                <div style={{ fontSize: 14, lineHeight: 1.7, color: '#404040' }}>{result.reason}</div>
               </div>
             </div>
           </div>

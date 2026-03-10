@@ -1,29 +1,24 @@
-# date-mode-decider (Vite React)
+# date-mode-decider
 
-Cloudflare Pages 静态部署版，构建产物目录为 `dist`。
+Vite React static app for Cloudflare Pages.
 
-## 开发
+## Local development
 
 ```bash
 npm install
 npm run dev
 ```
 
-## 构建
+## Build
 
 ```bash
 npm run build
 ```
 
-## 本地预览构建产物
+The build output directory is `dist`.
 
-```bash
-npm run preview
-```
+## Cloudflare Pages
 
-## Cloudflare Pages 设置
-
-- Framework preset: `Vite`
+- Framework preset: Vite
 - Build command: `npm run build`
 - Build output directory: `dist`
-- Environment variables: 无需
